@@ -1,3 +1,4 @@
+# === memory.py ===
 class Memory:
     def __init__(self):
         self.history = []  # list of dicts {"role": "user"|"assistant", "content": str}
