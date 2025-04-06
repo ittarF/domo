@@ -50,11 +50,12 @@ class Agent:
         return messages
 
     async def chat(self, user_input: str) -> ResponseModel:
-        self.memory.add_user_message(user_input)
-
+        
         messages = self.build_context(user_input)
+        print(f"INPUT: {messages}")
         llm_output = await get_openrouter_response(messages, model=self.model)
         parsed = parse_response(llm_output)
+        self.memory.add_user_message(user_input)
         self.memory.add_agent_message(parsed.response)
 
         if parsed.tool_call:
