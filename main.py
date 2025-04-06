@@ -1,7 +1,9 @@
+# === main.py ===
+import asyncio
 from agent import Agent
 
-def main():
-    print("🤖 Agent Chat — type 'exit' to quit")
+async def main():
+    print("\n🤖 Agent Chat (async + memory) — type 'exit' to quit")
     agent = Agent()
 
     while True:
@@ -10,10 +12,10 @@ def main():
             break
 
         try:
-            result = agent.chat(user_input)
+            result = await agent.chat(user_input)
             print(f"\n🧠 Agent: {result.response}")
         except Exception as e:
             print(f"\n❌ Error: {e}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
