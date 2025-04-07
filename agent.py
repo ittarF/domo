@@ -132,25 +132,28 @@ class Agent:
             return {"result": None, "error": str(e)}
 
 
-    async def build_context(self, user_input: str):
-        relevant_tools = await self._fetch_relevant_tools(user_input)
-
-        # Format the tool descriptions for the model
-        tools_context = "Available tools:\n"
-        for tool in relevant_tools:
-            tools_context += f"- {tool['name']}: {tool['description']}\n"
-            tools_context += f"  Parameters: {json.dumps(tool['parameters'])}\n\n"
-        system_prompt = SYSTEM_MESSAGE + tools_context + FORMATTING_INSTRUCTIONS
+    async def build_context(self, user_input: str = None):
+        if user_input:
+            relevant_tools = await self._fetch_relevant_tools(user_input)
+            
+            # Format the tool descriptions for the model
+            tools_context = "Available tools:\n"
+            for tool in relevant_tools:
+                tools_context += f"- {tool['name']}: {tool['description']}\n"
+                tools_context += f"  Parameters: {json.dumps(tool['parameters'])}\n\n"
+        else:
+            tools_context = ""
+        system_prompt = SYSTEM_MESSAGE + FORMATTING_INSTRUCTIONS + tools_context
         messages = [
             {"role": "system", "content": system_prompt}
         ]
         messages.extend(self.memory.get_context_prompt())
-        messages.append({"role": "user", "content": user_input})
+        if user_input:
+            messages.append({"role": "user", "content": user_input})
         return messages
 
     async def chat(self, user_input: str) -> ResponseModel:
         messages = await self.build_context(user_input)
-        print(f"INPUT: {messages}")
         llm_output = await get_openrouter_response(messages, model=self.model)
         parsed = parse_response(llm_output)
         self.memory.add_user_message(user_input)
@@ -163,15 +166,20 @@ class Agent:
                 tool_result = await self._execute_tool(parsed.tool_call)
                 print('2')
                 # Convert the tool result to a safe string representation
-                import json
                 tool_result_str = json.dumps(tool_result, default=str)
                 print('3')
                 # Add the result to the response
-                parsed.response += f"\n\n🔧 Tool Result:\n{tool_result_str}"
-                self.memory.add_agent_message(f"Tool result: {tool_result_str}")
+                # parsed.response += f"\n\n🔧 Tool Result:\n{tool_result_str}"
+                self.memory.add_agent_message(f"Tool Result\n{tool_result_str}")
             except Exception as e:
                 error_message = f"Error processing tool result: {str(e)}"
                 parsed.response += f"\n\n❌ Tool Error: {error_message}"
                 self.memory.add_agent_message(f"Tool error: {error_message}")
+            
+            messages = await self.build_context()
+            llm_output = await get_openrouter_response(messages, model=self.model)
+            parsed = parse_response(llm_output)
+
+                
 
         return parsed

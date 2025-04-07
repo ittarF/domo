@@ -30,4 +30,5 @@ async def get_openrouter_response(messages, model: str, max_tokens: int = 500, t
             if resp.status != 200:
                 raise Exception(f"OpenRouter API error: {resp.status}")
             result = await resp.json()
+            print(result)
             return result["choices"][0]["message"]["content"].strip()
